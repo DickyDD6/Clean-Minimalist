@@ -1,59 +1,49 @@
 import React, { useState } from 'react';
-import { PanelLeft, Plus, Trash2, LayoutDashboard } from 'lucide-react';
+import { PanelLeft, Plus, Trash2, LayoutDashboard, Home } from 'lucide-react';
 
-const Sidebar = ({ boards, activeBoard, onSelectBoard, onAddBoard, onDeleteBoard, onEditBoard }) => {
+const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, onAddBoard, onDeleteBoard, onEditBoard }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [editText, setEditText] = useState('');
-
-    const handleEditStart = (board) => {
-        setEditingId(board.id);
-        setEditText(board.title);
-    };
-
-    const handleEditSave = () => {
-        if (editText.trim() && editingId) {
-            onEditBoard(editingId, editText);
-        }
-        setEditingId(null);
-    };
-
-    const handleEditCancel = () => {
-        setEditingId(null);
-        setEditText('');
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleEditSave();
-        } else if (e.key === 'Escape') {
-            handleEditCancel();
-        }
-    };
 
     return (
         <div
             className={`bg-slate-800 border-r border-slate-700 transition-all duration-300 flex flex-col ${isCollapsed ? 'w-16' : 'w-64'
                 }`}
         >
-            {/* Header dengan Toggle Button */}
             <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                 {!isCollapsed && (
-                    <h2 className="text-slate-50 font-semibold text-lg">Boards</h2>
+                    <h1 className="text-lg font-bold text-slate-50 tracking-wide">
+                        📋 My Boards
+                    </h1>
                 )}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="text-slate-400 hover:text-slate-50 transition-colors"
+                    className="text-slate-400 hover:text-slate-50 transition-colors p-1 rounded hover:bg-slate-700"
+                    title={isCollapsed ? 'Expand' : 'Collapse'}
                 >
                     <PanelLeft size={20} />
                 </button>
             </div>
 
-            {/* New Board Button */}
-            <div className="p-3">
+            <div className="p-2">
+                <button
+                    onClick={onGoHome}
+                    className={`w-full flex items-center gap-2 rounded-lg transition-all ${isCollapsed ? 'p-3 justify-center' : 'p-2.5'
+                        } ${currentView === 'home'
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-slate-300 hover:bg-slate-700'
+                        }`}
+                    title="Home"
+                >
+                    <Home size={18} />
+                    {!isCollapsed && <span className="text-sm font-medium">Home</span>}
+                </button>
+            </div>
+
+            <div className="px-2 mb-2">
+                <div className="border-t border-slate-700 my-2" />
                 <button
                     onClick={onAddBoard}
-                    className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 ${isCollapsed ? 'p-3' : 'p-2.5'
+                    className={`w-full bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 border-dashed rounded-lg transition-all flex items-center justify-center gap-2 ${isCollapsed ? 'p-3' : 'p-2'
                         }`}
                     title="New Board"
                 >
@@ -62,58 +52,53 @@ const Sidebar = ({ boards, activeBoard, onSelectBoard, onAddBoard, onDeleteBoard
                 </button>
             </div>
 
-            {/* Board List */}
             <div className="flex-1 overflow-y-auto p-2">
                 {boards.map((board) => (
                     <div
                         key={board.id}
-                        className={`group mb-1 rounded-lg transition-all ${activeBoard === board.id
-                                ? 'bg-emerald-500 text-white'
-                                : 'text-slate-300 hover:bg-slate-700'
+                        className={`group mb-1 rounded-lg transition-all ${currentView === 'board' && activeBoard === board.id
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-slate-300 hover:bg-slate-700'
                             }`}
                     >
                         <div className="flex items-center gap-2 p-2.5">
-                            {/* Icon */}
                             <div className="flex-shrink-0">
                                 <LayoutDashboard size={18} />
                             </div>
 
-                            {/* Board Title atau Edit Input */}
                             {!isCollapsed && (
                                 <>
-                                    {editingId === board.id ? (
-                                        <input
-                                            type="text"
-                                            value={editText}
-                                            onChange={(e) => setEditText(e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            onBlur={handleEditSave}
-                                            autoFocus
-                                            className="flex-1 bg-slate-600 text-slate-50 px-2 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        />
-                                    ) : (
-                                        <button
-                                            onClick={() => onSelectBoard(board.id)}
-                                            onDoubleClick={() => handleEditStart(board)}
-                                            className="flex-1 text-left text-sm font-medium truncate"
-                                        >
-                                            {board.title}
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => onSelectBoard(board.id)}
+                                        className="flex-1 text-left text-sm font-medium truncate"
+                                    >
+                                        {board.title}
+                                    </button>
 
-                                    {/* Delete Button (visible on hover) */}
-                                    {boards.length > 1 && activeBoard !== board.id && editingId !== board.id && (
+                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onDeleteBoard(board.id);
+                                                onEditBoard(board.id);
                                             }}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400"
-                                            title="Delete Board"
+                                            className="p-1 text-slate-400 hover:text-indigo-400 transition-colors"
+                                            title="Edit Board"
                                         >
-                                            <Trash2 size={16} />
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                         </button>
-                                    )}
+                                        {boards.length > 1 && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteBoard(board.id);
+                                                }}
+                                                className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                                title="Delete Board"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </div>
@@ -121,11 +106,10 @@ const Sidebar = ({ boards, activeBoard, onSelectBoard, onAddBoard, onDeleteBoard
                 ))}
             </div>
 
-            {/* Footer Info */}
             {!isCollapsed && (
                 <div className="p-3 border-t border-slate-700">
                     <p className="text-xs text-slate-500 text-center">
-                        {boards.length} board{boards.length !== 1 ? 's' : ''} • Double-click to rename
+                        {boards.length} board{boards.length !== 1 ? 's' : ''}
                     </p>
                 </div>
             )}
