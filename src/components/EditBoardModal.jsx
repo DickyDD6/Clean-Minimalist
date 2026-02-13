@@ -5,12 +5,21 @@ const EditBoardModal = ({ isOpen, onClose, board, onSave }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [boardType, setBoardType] = useState('standard');
+    const [category, setCategory] = useState('Work');
+
+    const CATEGORIES = [
+        { id: 'Work', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+        { id: 'Personal', color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+        { id: 'School', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+        { id: 'Other', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' }
+    ];
 
     useEffect(() => {
         if (board) {
             setTitle(board.title || '');
             setDescription(board.description || '');
             setBoardType(board.type || 'advanced');
+            setCategory(board.category || 'Work');
         }
     }, [board?.id]);
 
@@ -19,7 +28,7 @@ const EditBoardModal = ({ isOpen, onClose, board, onSave }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (title.trim()) {
-            onSave(board.id, { title: title.trim(), description, type: boardType });
+            onSave(board.id, { title: title.trim(), description, type: boardType, category });
         }
     };
 
@@ -106,6 +115,25 @@ const EditBoardModal = ({ isOpen, onClose, board, onSave }) => {
                                 ⚠️ Board punya lebih dari 3 kolom — hapus dulu untuk beralih ke Standard
                             </p>
                         )}
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-slate-400 mb-2">Kategori</label>
+                        <div className="flex flex-wrap gap-2">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => setCategory(cat.id)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${cat.id === category
+                                            ? `${cat.color} ring-2 ring-offset-2 ring-offset-slate-800 ring-slate-400`
+                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                        }`}
+                                >
+                                    {cat.id}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="flex justify-end gap-3">

@@ -1,69 +1,69 @@
 // Date utility functions for deadline handling
-// Prevents timezone bugs by stripping time component
+// Updated to handle full date & time (YYYY-MM-DDTHH:mm)
 
 /**
- * Strip time from date, keep date only at 00:00:00
- * @param {string} dateString - Date string in YYYY-MM-DD format
- * @returns {Date|null} Date object at 00:00:00 or null
- */
-export const stripTime = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-/**
- * Get today's date at 00:00:00
- * @returns {Date} Today at midnight
- */
-export const getToday = () => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-};
-
-/**
- * Compare deadline with today to determine status
- * @param {string} deadline - Deadline in YYYY-MM-DD format
+ * Compare deadline with current time to determine status
+ * @param {string} deadline - Deadline in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm)
  * @returns {'overdue'|'today'|'upcoming'|null} Deadline status
  */
 export const compareDates = (deadline) => {
     if (!deadline) return null;
 
-    const deadlineDate = stripTime(deadline);
-    const today = getToday();
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
 
-    const diffTime = deadlineDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Check if deadline has passed (considering time)
+    if (deadlineDate < now) {
+        return 'overdue';
+    }
 
-    if (diffDays < 0) return 'overdue';
-    if (diffDays === 0) return 'today';
+    // Check if it's the same day
+    if (deadlineDate.toDateString() === now.toDateString()) {
+        return 'today';
+    }
+
     return 'upcoming';
 };
 
 /**
  * Get relative time text in Indonesian
- * @param {string} deadline - Deadline in YYYY-MM-DD format
- * @returns {string} Relative time text (e.g., "dalam 3 hari", "hari ini")
+ * @param {string} deadline - Deadline in ISO format
+ * @returns {string} Relative time text (e.g., "dalam 2 jam", "besok, 10:00")
  */
 export const getRelativeTime = (deadline) => {
     if (!deadline) return '';
 
-    const deadlineDate = stripTime(deadline);
-    const today = getToday();
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    const diffMs = deadlineDate - now;
 
-    const diffTime = deadlineDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return `terlambat ${Math.abs(diffDays)} hari`;
-    if (diffDays === 0) return 'hari ini';
-    if (diffDays === 1) return 'besok';
+    // Overdue logic
+    if (diffMs < 0) {
+        const absDiffMinutes = Math.abs(diffMinutes);
+        const absDiffHours = Math.abs(diffHours);
+        const absDiffDays = Math.abs(diffDays);
+
+        if (absDiffMinutes < 60) return `terlambat ${absDiffMinutes} menit`;
+        if (absDiffHours < 24) return `terlambat ${absDiffHours} jam`;
+        return `terlambat ${absDiffDays} hari`;
+    }
+
+    // Upcoming logic
+    if (diffMinutes < 60) return `dalam ${diffMinutes} menit`;
+    if (diffHours < 24 && deadlineDate.getDate() === now.getDate()) return `hari ini, ${deadlineDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+    if (diffDays === 1 || (diffHours < 24 && deadlineDate.getDate() !== now.getDate())) return `besok, ${deadlineDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+    
     return `dalam ${diffDays} hari`;
 };
 
 /**
- * Format date for display (DD MMM format)
- * @param {string} dateString - Date string in YYYY-MM-DD format
- * @returns {string} Formatted date (e.g., "15 Feb")
+ * Format date for display (DD MMM HH:mm)
+ * @param {string} dateString - Date string in ISO format
+ * @returns {string} Formatted date (e.g., "15 Feb 14:30")
  */
 export const formatDisplayDate = (dateString) => {
     if (!dateString) return '';
@@ -73,35 +73,12 @@ export const formatDisplayDate = (dateString) => {
 
     const day = date.getDate();
     const month = months[date.getMonth()];
+    const time = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    return `${day} ${month}`;
-};
-
-/**
- * Get deadline badge style based on status
- * @param {string} deadline - Deadline in YYYY-MM-DD format
- * @returns {object} Badge style configuration
- */
-export const getDeadlineStyle = (deadline) => {
-    const status = compareDates(deadline);
-
-    const styles = {
-        overdue: {
-            color: 'bg-red-500/20 text-red-400 border-red-500/50',
-            icon: '🔴',
-            label: 'Terlambat'
-        },
-        today: {
-            color: 'bg-amber-500/20 text-amber-400 border-amber-500/50',
-            icon: '🟠',
-            label: 'Hari Ini'
-        },
-        upcoming: {
-            color: 'bg-green-500/20 text-green-400 border-green-500/50',
-            icon: '🟢',
-            label: 'Akan Datang'
-        }
-    };
-
-    return styles[status] || null;
+    // Check if time exists (not 00:00 default)
+    // Actually, datetime-local usually sets time. If it was just date (task lama), it defaults to 00:00 (UTC) or local 07:00.
+    // We will show time anyway for consistency, or we could strict check if input had time.
+    // For simplicity and since we moved to datetime-local, we show time.
+    
+    return `${day} ${month} ${time}`;
 };

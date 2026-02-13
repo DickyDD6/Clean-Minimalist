@@ -13,8 +13,11 @@ const EditTaskModal = ({ isOpen, onClose, onSave, task, availableTags, onCreateT
     const [priority, setPriority] = useState(task?.priority || 'medium');
     const [deadline, setDeadline] = useState(task?.deadline || '');
     const [description, setDescription] = useState(task?.description || '');
-    // Defensive programming: task.tags might be undefined for old tasks
     const [selectedTags, setSelectedTags] = useState(task?.tags || []);
+    // Format for datetime-local input: YYYY-MM-DDThh:mm
+    const [completedAt, setCompletedAt] = useState(
+        task?.completedAt ? new Date(task.completedAt).toISOString().slice(0, 16) : ''
+    );
 
     if (!isOpen || !task) return null;
 
@@ -27,7 +30,8 @@ const EditTaskModal = ({ isOpen, onClose, onSave, task, availableTags, onCreateT
                 priority,
                 deadline: deadline || null,
                 description: description || null,
-                tags: selectedTags
+                tags: selectedTags,
+                completedAt: completedAt ? new Date(completedAt).toISOString() : task.completedAt
             });
             onClose();
         }
@@ -40,6 +44,7 @@ const EditTaskModal = ({ isOpen, onClose, onSave, task, availableTags, onCreateT
         setDeadline(task.deadline || '');
         setDescription(task.description || '');
         setSelectedTags(task.tags || []);
+        setCompletedAt(task.completedAt ? new Date(task.completedAt).toISOString().slice(0, 16) : '');
         onClose();
     };
 
@@ -132,12 +137,30 @@ const EditTaskModal = ({ isOpen, onClose, onSave, task, availableTags, onCreateT
                             <span className="text-slate-500 text-xs ml-1">(opsional)</span>
                         </label>
                         <input
-                            type="date"
+                            type="datetime-local"
                             value={deadline}
                             onChange={(e) => setDeadline(e.target.value)}
                             className="w-full bg-slate-700 text-slate-50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 [color-scheme:dark]"
                         />
                     </div>
+
+                    {/* Completion Date (Only if task is completed) */}
+                    {task.completedAt && (
+                        <div className="pt-2 border-t border-slate-700">
+                            <label className="block text-sm font-medium text-emerald-400 mb-2">
+                                Tanggal Selesai
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={completedAt}
+                                onChange={(e) => setCompletedAt(e.target.value)}
+                                className="w-full bg-slate-900/50 border border-emerald-500/30 text-slate-50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 [color-scheme:dark]"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-1">
+                                Ubah tanggal ini jika Anda lupa menandainya selesai kemarin.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Buttons */}
                     <div className="flex gap-2 pt-2">

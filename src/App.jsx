@@ -14,6 +14,7 @@ function App() {
       parsed.boards = parsed.boards.map(board => ({
         ...board,
         type: board.type || 'advanced',
+        category: board.category || 'Work',
         columns: board.columns || [
           { id: 'todo', title: 'To Do', color: 'border-indigo-500' },
           { id: 'doing', title: 'Doing', color: 'border-amber-500' },
@@ -101,12 +102,13 @@ function App() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateBoard = (title, description, type = 'standard') => {
+  const handleCreateBoard = (title, description, type = 'standard', category = 'Work') => {
     const newBoard = {
       id: `board-${Date.now()}`,
       title: title,
       description: description,
       type: type,
+      category: category,
       columns: [
         { id: 'todo', title: 'To Do', color: 'border-indigo-500' },
         { id: 'doing', title: 'Doing', color: 'border-amber-500' },

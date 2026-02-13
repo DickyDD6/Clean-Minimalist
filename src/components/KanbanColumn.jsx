@@ -4,10 +4,12 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Trash2, Plus, MoreVertical } from 'lucide-react';
 import TaskCard from './TaskCard';
 import AddTaskModal from './AddTaskModal';
+import ConfirmDialog from './ConfirmDialog';
 
 const KanbanColumn = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onClearCompleted, availableTags, onCreateTag, onEditColumn, onDeleteColumn, boardType = 'advanced' }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [editTitle, setEditTitle] = useState(column.title);
 
     const { setNodeRef } = useDroppable({
@@ -71,7 +73,7 @@ const KanbanColumn = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onCl
                                         <span>✎</span> Rename
                                     </button>
                                     <button
-                                        onClick={onDeleteColumn}
+                                        onClick={() => setShowDeleteConfirm(true)}
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded flex items-center gap-2"
                                     >
                                         <span>🗑</span> Delete Column
@@ -103,6 +105,7 @@ const KanbanColumn = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onCl
                             onEdit={(newText) => onEditTask(column.id, task.id, newText)}
                             availableTags={availableTags}
                             onCreateTag={onCreateTag}
+                            isCompleted={column.id === 'done'}
                         />
                     ))}
                 </SortableContext>
@@ -115,6 +118,17 @@ const KanbanColumn = ({ column, tasks, onAddTask, onDeleteTask, onEditTask, onCl
                 columnId={column.id}
                 availableTags={availableTags}
                 onCreateTag={onCreateTag}
+            />
+
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                title="Hapus Kolom?"
+                message={`Anda yakin ingin menghapus kolom "${column.title}"? Semua task di dalamnya akan ikut terhapus.`}
+                onConfirm={() => {
+                    onDeleteColumn();
+                    setShowDeleteConfirm(false);
+                }}
+                onCancel={() => setShowDeleteConfirm(false)}
             />
         </div>
     );

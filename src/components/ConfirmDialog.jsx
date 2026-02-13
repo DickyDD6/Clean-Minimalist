@@ -7,7 +7,6 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
-                {/* Icon & Title */}
                 <div className="flex items-start gap-4 mb-4">
                     <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
                         <AlertTriangle className="text-red-400" size={24} />
@@ -22,7 +21,6 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
                     </div>
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-3 justify-end mt-6">
                     <button
                         onClick={onCancel}

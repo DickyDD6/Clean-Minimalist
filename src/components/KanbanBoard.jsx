@@ -140,7 +140,15 @@ const KanbanBoard = ({ boardId, boardTitle, boardDescription, boardType = 'advan
                 setTasks(prev => ({ ...prev, [sourceColumn]: reorderedTasks }));
             }
         } else {
-            const updatedTaskToMove = { ...taskToMove, columnId: targetColumn };
+            let updatedTaskToMove = { ...taskToMove, columnId: targetColumn };
+            
+            // Handle completion timestamp
+            if (targetColumn === 'done') {
+                updatedTaskToMove.completedAt = new Date().toISOString();
+            } else {
+                delete updatedTaskToMove.completedAt;
+            }
+
             setTasks(prev => ({
                 ...prev,
                 [sourceColumn]: (prev[sourceColumn] || []).filter(t => t.id !== draggedId),

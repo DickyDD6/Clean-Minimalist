@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { PanelLeft, Plus, Trash2, LayoutDashboard, Home } from 'lucide-react';
+import ConfirmDialog from './ConfirmDialog';
 
 const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, onAddBoard, onDeleteBoard, onEditBoard }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [boardToDelete, setBoardToDelete] = useState(null);
 
     return (
         <div
@@ -90,7 +92,8 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    onDeleteBoard(board.id);
+                                                    e.stopPropagation();
+                                                    setBoardToDelete(board);
                                                 }}
                                                 className="p-1 text-slate-400 hover:text-red-400 transition-colors"
                                                 title="Delete Board"
@@ -113,6 +116,17 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
                     </p>
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={!!boardToDelete}
+                title="Hapus Board?"
+                message={`Anda yakin ingin menghapus board "${boardToDelete?.title}"? Semua list dan task di dalamnya akan hilang permanen.`}
+                onConfirm={() => {
+                    if (boardToDelete) onDeleteBoard(boardToDelete.id);
+                    setBoardToDelete(null);
+                }}
+                onCancel={() => setBoardToDelete(null)}
+            />
         </div>
     );
 };

@@ -122,7 +122,7 @@ const AddTaskModal = ({ isOpen, onClose, onAddTask, columnId, availableTags, onC
                             <span className="text-slate-500 text-xs ml-1">(opsional)</span>
                         </label>
                         <input
-                            type="date"
+                            type="datetime-local"
                             value={deadline}
                             onChange={(e) => setDeadline(e.target.value)}
                             className="w-full bg-slate-700 text-slate-50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 [color-scheme:dark]"

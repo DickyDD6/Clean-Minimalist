@@ -5,6 +5,7 @@ import { X, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { compareDates, getRelativeTime, formatDisplayDate } from '../utils/dateUtils';
 import EditTaskModal from './EditTaskModal';
 import TagBadge from './TagBadge';
+import ConfirmDialog from './ConfirmDialog';
 
 const PRIORITY_CONFIG = {
     low: { label: 'Low', color: 'bg-blue-500/20 text-blue-400 border-blue-500/50' },
@@ -12,14 +13,11 @@ const PRIORITY_CONFIG = {
     high: { label: 'High', color: 'bg-red-500/20 text-red-400 border-red-500/50' }
 };
 
-const DEADLINE_STYLES = {
-    overdue: 'bg-red-500/20 text-red-400 border border-red-500/50',
-    today: 'bg-amber-500/20 text-amber-400 border border-amber-500/50',
-    upcoming: 'bg-green-500/20 text-green-400 border border-green-500/50'
-};
 
-const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onCreateTag }) => {
+
+const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onCreateTag, isCompleted }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showDescription, setShowDescription] = useState(false);
 
     const {
@@ -77,11 +75,34 @@ const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onC
                         {priorityConfig.label}
                     </span>
 
-                    {task.deadline && deadlineStatus && (
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${DEADLINE_STYLES[deadlineStatus]}`}>
+                    {/* Deadline/Status Badge */}
+                    {(task.deadline && deadlineStatus) ? (
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${isCompleted
+                                ? (!task.completedAt || new Date(task.completedAt) <= new Date(task.deadline)
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' // On Time
+                                    : 'bg-orange-500/20 text-orange-400 border border-orange-500/50' // Late
+                                )
+                                : deadlineStatus === 'overdue' 
+                                    ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                                    : deadlineStatus === 'today'
+                                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
+                                        : 'bg-green-500/20 text-green-400 border border-green-500/50'
+                            }`}>
                             📅 {displayDate}
-                            <span className="text-[10px] opacity-75">({relativeTime})</span>
+                            <span className="text-[10px] opacity-75">
+                                ({isCompleted
+                                    ? (!task.completedAt || new Date(task.completedAt) <= new Date(task.deadline) ? 'Tepat Waktu' : 'Terlambat')
+                                    : relativeTime
+                                })
+                            </span>
                         </span>
+                    ) : (
+                        /* Show simple Done badge if completed but no deadline */
+                        isCompleted && (
+                            <span className="px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">
+                                ✅ Selesai
+                            </span>
+                        )
                     )}
                 </div>
 
@@ -123,7 +144,7 @@ const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onC
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onDelete();
+                                setShowDeleteConfirm(true);
                             }}
                             className="text-slate-400 hover:text-red-400 transition-colors p-1"
                             title="Delete task"
@@ -177,11 +198,25 @@ const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onC
                                                     day: 'numeric'
                                                 })}
                                             </div>
-                                            <div className={`text-xs mt-0.5 ${deadlineStatus === 'overdue' ? 'text-red-400' :
-                                                deadlineStatus === 'today' ? 'text-amber-400' :
-                                                    'text-green-400'
+                                            {/* Completed Date Display */}
+                                            {isCompleted && task.completedAt && (
+                                                <div className="text-slate-400 mb-1">
+                                                    Selesai: {new Date(task.completedAt).toLocaleString('id-ID', {
+                                                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                                    })}
+                                                </div>
+                                            )}
+                                            
+                                            <div className={`text-xs mt-0.5 ${isCompleted
+                                                ? (task.deadline && task.completedAt && new Date(task.completedAt) > new Date(task.deadline) ? 'text-orange-400' : 'text-emerald-400')
+                                                : deadlineStatus === 'overdue' ? 'text-red-400' :
+                                                    deadlineStatus === 'today' ? 'text-amber-400' :
+                                                        'text-green-400'
                                                 }`}>
-                                                {relativeTime}
+                                                {isCompleted
+                                                    ? (task.deadline && task.completedAt && new Date(task.completedAt) > new Date(task.deadline) ? 'Selesai Terlambat' : 'Selesai')
+                                                    : relativeTime
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -210,6 +245,17 @@ const TaskCard = ({ task, accentColor, onDelete, onEdit, availableTags = [], onC
                 task={task}
                 availableTags={availableTags}
                 onCreateTag={onCreateTag}
+            />
+
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                title="Hapus Task?"
+                message="Anda yakin ingin menghapus task ini? Tindakan ini tidak dapat dibatalkan."
+                onConfirm={() => {
+                    onDelete();
+                    setShowDeleteConfirm(false);
+                }}
+                onCancel={() => setShowDeleteConfirm(false)}
             />
         </>
     );
