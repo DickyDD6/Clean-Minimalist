@@ -1,3 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===== Custom Scrollbar ===== */
+/* Chromium (Chrome, Edge, Brave) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}
+
+/* Hide scrollbar by default, show on hover */
+.overflow-x-auto,
+.overflow-y-auto,
+.overflow-auto {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.overflow-x-auto:hover,
+.overflow-y-auto:hover,
+.overflow-auto:hover {
+  scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+}
+
+/* Firefox */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+  }
+}
