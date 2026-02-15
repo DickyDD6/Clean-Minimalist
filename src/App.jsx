@@ -4,9 +4,11 @@ import KanbanBoard from './components/KanbanBoard';
 import Home from './components/Home';
 import CreateBoardModal from './components/CreateBoardModal';
 import EditBoardModal from './components/EditBoardModal';
+import { ToastProvider, useToast } from './context/ToastContext';
 import './index.css';
 
-function App() {
+function AppContent() {
+  const { showToast } = useToast();
   const [boards, setBoards] = useState(() => {
     const saved = localStorage.getItem('kanban-boards');
     if (saved) {
@@ -15,6 +17,7 @@ function App() {
         ...board,
         type: board.type || 'advanced',
         category: board.category || 'Work',
+        archived: board.archived || false,
         columns: board.columns || [
           { id: 'todo', title: 'To Do', color: 'border-indigo-500' },
           { id: 'doing', title: 'Doing', color: 'border-amber-500' },
@@ -130,20 +133,59 @@ function App() {
   };
 
   const handleDeleteBoard = (boardId) => {
-    if (boards.boards.length === 1) {
-      alert('Cannot delete the last board!');
+    const activeBoards = boards.boards.filter(b => !b.archived);
+    if (activeBoards.length === 1 && !boards.boards.find(b => b.id === boardId)?.archived) {
+      showToast('Tidak bisa menghapus board aktif terakhir!', 'error');
       return;
     }
 
     const newBoards = boards.boards.filter(b => b.id !== boardId);
     const newActiveBoard = boards.activeBoard === boardId
-      ? newBoards[0].id
+      ? newBoards.find(b => !b.archived)?.id || newBoards[0]?.id
       : boards.activeBoard;
 
     setBoards({
       boards: newBoards,
       activeBoard: newActiveBoard
     });
+    
+    showToast('Board berhasil dihapus', 'success');
+  };
+
+  const handleArchiveBoard = (boardId) => {
+    const activeBoards = boards.boards.filter(b => !b.archived);
+    if (activeBoards.length === 1) {
+      showToast('Tidak bisa mengarsip board aktif terakhir!', 'warning');
+      return;
+    }
+
+    setBoards(prev => {
+      const updatedBoards = prev.boards.map(board =>
+        board.id === boardId ? { ...board, archived: true } : board
+      );
+      
+      const newActiveBoard = prev.activeBoard === boardId
+        ? updatedBoards.find(b => !b.archived)?.id
+        : prev.activeBoard;
+
+      return {
+        boards: updatedBoards,
+        activeBoard: newActiveBoard
+      };
+    });
+    
+    showToast('Board berhasil diarsipkan', 'success');
+  };
+
+  const handleUnarchiveBoard = (boardId) => {
+    setBoards(prev => ({
+      ...prev,
+      boards: prev.boards.map(board =>
+        board.id === boardId ? { ...board, archived: false } : board
+      )
+    }));
+    
+    showToast('Board berhasil dikembalikan', 'success');
   };
 
   const handleEditBoard = (boardId, updates) => {
@@ -233,6 +275,7 @@ function App() {
         onSelectBoard={handleSelectBoard}
         onAddBoard={handleAddBoardClick}
         onDeleteBoard={handleDeleteBoard}
+        onArchiveBoard={handleArchiveBoard}
         onEditBoard={handleOpenEditBoard}
       />
 
@@ -242,6 +285,8 @@ function App() {
             boards={boards.boards}
             onSelectBoard={handleSelectBoard}
             onCreateBoard={handleAddBoardClick}
+            onUnarchiveBoard={handleUnarchiveBoard}
+            onDeleteBoard={handleDeleteBoard}
           />
         ) : (
           activeBoard ? (
@@ -287,6 +332,14 @@ function App() {
         onSave={handleEditBoard}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 

@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Plus, Layout, CheckCircle, Clock, ListTodo, BarChart3 } from 'lucide-react';
+import ConfirmDialog from './ConfirmDialog';
+import { useToast } from '../context/ToastContext';
 
 const CATEGORY_COLORS = {
     'Work': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
@@ -8,9 +10,16 @@ const CATEGORY_COLORS = {
     'Other': 'bg-slate-500/20 text-slate-300 border-slate-500/30'
 };
 
-const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
+const Home = ({ boards, onSelectBoard, onCreateBoard, onUnarchiveBoard, onDeleteBoard }) => {
+    // Separate active and archived boards
+    const activeBoards = boards.filter(b => !b.archived);
+    const archivedBoards = boards.filter(b => b.archived);
+    const { showToast } = useToast();
+    const [boardToDelete, setBoardToDelete] = useState(null);
+
     const stats = useMemo(() => {
-        return boards.reduce((acc, board) => {
+        // Only count tasks from active boards
+        return activeBoards.reduce((acc, board) => {
             const allTasks = board.tasks ? Object.values(board.tasks).flat() : [];
             const doingTasks = board.tasks?.doing?.length || 0;
             const doneTasks = board.tasks?.done?.length || 0;
@@ -21,7 +30,7 @@ const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
                 done: acc.done + doneTasks
             };
         }, { total: 0, doing: 0, done: 0 });
-    }, [boards]);
+    }, [activeBoards]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -95,10 +104,10 @@ const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
                     </div>
                     
                     <div className="flex items-end justify-start gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
-                        {boards.map(board => {
+                        {activeBoards.map(board => {
                             const doneCount = board.tasks?.done?.length || 0;
                             // Calculate max for scale (min 5 to avoid flat charts)
-                            const maxDone = Math.max(5, ...boards.map(b => b.tasks?.done?.length || 0));
+                            const maxDone = Math.max(5, ...activeBoards.map(b => b.tasks?.done?.length || 0));
                             const heightPercentage = Math.round((doneCount / maxDone) * 100);
                             
                             return (
@@ -119,7 +128,7 @@ const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
                                 </div>
                             );
                         })}
-                        {boards.length === 0 && (
+                        {activeBoards.length === 0 && (
                             <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">
                                 Belum ada data board.
                             </div>
@@ -132,12 +141,12 @@ const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
                         <Layout size={24} />
                     </div>
                     <h2 className="text-2xl font-bold text-slate-100">
-                        Project Boards
+                        Active Boards
                     </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {boards.map(board => {
+                    {activeBoards.map(board => {
                         const totalTasks = getTotalTasks(board);
 
                         return (
@@ -270,6 +279,93 @@ const Home = ({ boards, onSelectBoard, onCreateBoard }) => {
                         <span className="font-medium">Tambah Project Baru</span>
                     </button>
                 </div>
+
+                {/* Archived Boards Section */}
+                {archivedBoards.length > 0 && (
+                    <>
+                        <div className="mt-12 mb-6 flex items-center gap-3">
+                            <div className="p-2 bg-slate-800 rounded-lg text-amber-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-100">
+                                Archived Boards
+                            </h2>
+                            <span className="text-sm text-slate-500">({archivedBoards.length})</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {archivedBoards.map(board => {
+                                const totalTasks = getTotalTasks(board);
+
+                                return (
+                                    <div
+                                        key={board.id}
+                                        className="bg-slate-800/50 p-6 rounded-xl border-2 border-dashed border-slate-700/50 relative overflow-hidden opacity-70 hover:opacity-90 transition-opacity"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                                            <Layout size={64} />
+                                        </div>
+
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <h3 className="text-xl font-bold text-slate-300 truncate pr-2">
+                                                {board.title}
+                                            </h3>
+                                            <div className="flex gap-2">
+                                                {board.category && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border ${CATEGORY_COLORS[board.category] || CATEGORY_COLORS['Other']}`}>
+                                                        {board.category}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {board.description && (
+                                            <p className="text-sm text-slate-500 mb-4 line-clamp-2">{board.description}</p>
+                                        )}
+
+                                        <div className="text-sm text-slate-400 mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <ListTodo size={14} />
+                                                <span>{totalTasks} Total Tasks</span>
+                                                <span className="text-emerald-400">• {board.tasks?.done?.length || 0} Done</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 pt-4 border-t border-slate-700/50">
+                                            <button
+                                                onClick={() => onUnarchiveBoard(board.id)}
+                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                                                Restore
+                                            </button>
+                                            <button
+                                                onClick={() => setBoardToDelete(board)}
+                                                className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-red-600/50"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
+
+                <ConfirmDialog
+                    isOpen={!!boardToDelete}
+                    title="Hapus Board?"
+                    message={`Anda yakin ingin menghapus board "${boardToDelete?.title}" secara permanen? Semua list dan task di dalamnya akan hilang permanen.`}
+                    onConfirm={() => {
+                        if (boardToDelete) {
+                            onDeleteBoard(boardToDelete.id);
+                            showToast('Board berhasil dihapus permanen', 'success');
+                        }
+                        setBoardToDelete(null);
+                    }}
+                    onCancel={() => setBoardToDelete(null)}
+                />
             </div>
         </div>
     );

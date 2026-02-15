@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { PanelLeft, Plus, Trash2, LayoutDashboard, Home } from 'lucide-react';
 import ConfirmDialog from './ConfirmDialog';
+import { useToast } from '../context/ToastContext';
 
-const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, onAddBoard, onDeleteBoard, onEditBoard }) => {
+const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, onAddBoard, onDeleteBoard, onArchiveBoard, onEditBoard }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [boardToDelete, setBoardToDelete] = useState(null);
+    const { showToast } = useToast();
+
+    // Filter out archived boards
+    const activeBoards = boards.filter(b => !b.archived);
 
     return (
         <div
@@ -55,7 +60,7 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
             </div>
 
             <div className="flex-1 overflow-y-auto p-2">
-                {boards.map((board) => (
+                {activeBoards.map((board) => (
                     <div
                         key={board.id}
                         className={`group mb-1 rounded-lg transition-all ${currentView === 'board' && activeBoard === board.id
@@ -88,7 +93,17 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                         </button>
-                                        {boards.length > 1 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onArchiveBoard(board.id);
+                                            }}
+                                            className="p-1 text-slate-400 hover:text-amber-400 transition-colors"
+                                            title="Archive Board"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                                        </button>
+                                        {activeBoards.length > 1 && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -112,7 +127,7 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
             {!isCollapsed && (
                 <div className="p-3 border-t border-slate-700">
                     <p className="text-xs text-slate-500 text-center">
-                        {boards.length} board{boards.length !== 1 ? 's' : ''}
+                        {activeBoards.length} active board{activeBoards.length !== 1 ? 's' : ''}
                     </p>
                 </div>
             )}
@@ -122,7 +137,10 @@ const Sidebar = ({ boards, activeBoard, currentView, onGoHome, onSelectBoard, on
                 title="Hapus Board?"
                 message={`Anda yakin ingin menghapus board "${boardToDelete?.title}"? Semua list dan task di dalamnya akan hilang permanen.`}
                 onConfirm={() => {
-                    if (boardToDelete) onDeleteBoard(boardToDelete.id);
+                    if (boardToDelete) {
+                        onDeleteBoard(boardToDelete.id);
+                        showToast('Board berhasil dihapus', 'success');
+                    }
                     setBoardToDelete(null);
                 }}
                 onCancel={() => setBoardToDelete(null)}
